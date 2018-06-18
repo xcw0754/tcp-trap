@@ -3,16 +3,6 @@
 `SIGPIPE`信号在网络编程中很常见，它的产生是因为远端已经关闭了连接，而你还调用了`send`想发数据，此时就会产生此信号，当然，你这次`send`肯定是失败的，errno会被置为`EPIPE`。
 
 
-
-
-测试目的：
-	1、SIGPIPE什么情况下会产生
-    2、产生之后怎么处理
-    3、有什么隐藏的问题
-    4、send和recv是否都会收到这个信号？
-
-
-
 先简单看一下以下两个程序在干什么，再往后看数据包是怎样的，最后再思考一下可以怎么解决处理这个问题。
 
 serv.c
@@ -179,6 +169,7 @@ int main()
 在长时间运行的程序中，这种信号必须处理，否则默认就是终止进程，这不是我们期望的那样。以下提供几种常用方式可以避免进程由于`SIGPIPE`信号而被终止。
 
 方法一:
+
 用`sighandler_t signal(int signum, sighandler_t handler);`注册一个handler来处理信号。
 ```
 void handler_pipe()
@@ -203,6 +194,7 @@ int main()
 ```
 
 方法二：
+
 在`send`最后一个参数加入`MSG_NOSIGNAL`，阻止内核发来`SIGPIPE`信号。不过errno仍会置为`EPIPE`。
 ```
 int main()
@@ -218,6 +210,7 @@ int main()
 ```
 
 方法三：
+
 直接忽略这个信号，进程不会再收到这个信号了。
 ```
 int main()
@@ -237,5 +230,6 @@ int main()
 
 
 好了，现在考虑另一个问题，把client.c的第3个`send`换成`recv`会收到`SIGPIPE`信号吗？
+
 答案是否定的，`recv`会立即返回0，且errno为0，即成功。无论再`recv`几次，立即返回的结果还是一样的。所以，当tcp连接中调用`recv`返回值为0表示远端关闭了socket。
 
