@@ -154,11 +154,17 @@ int main()
 ![package](https://raw.githubusercontent.com/xcw0754/tcp-trap/master/SIGPIPE/SIGPIPE_test.png)
 
 第1~3个包，著名的TCP三次握手。
+
 第4个包，client发送了512B数据
+
 第5个包，serv发送的ACK，确认第4个包
+
 第6个包，serv调用`close`发送的FIN，单向关闭连接。
+
 第7个包，client回复ACK，确认第6个包
+
 第8个包，client再次发送512B数据
+
 第9个包，serv回复RST终止了连接
 
 注：发第9个包是因为serv已经`close`句柄，无法再接收数据了，告知client别再发送数据了。client在收到第9个包之后，如果还调用send的话，就会产生SIGPIPE信号，因为这条连接已经不存在了。
