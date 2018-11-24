@@ -17,11 +17,11 @@ TCP协议有个著名算法`Nagle’s Algorithm`，此算法一般默认是开�
 if 有新资料要传送
     if 远端窗口大小 >= MSS and 可传送的资料 >= MSS
         立刻传送完整MSS大小的segment
-else
-    if 管道中有尚未确认的资料
-        在最新确认（ACK）封包收到前，將资料排进缓冲区队列
     else
-        立即传送资料
+        if 管道中有尚未确认的资料
+            在最新确认（ACK）封包收到前，將资料排进缓冲区队列
+        else
+            立即传送资料
 ```
 
 看到这里，其实是没有问题的，积累了更多数据再发送，这个行为很正常。现在来了解一下`TCP delayed acknowledgment`。
@@ -57,15 +57,3 @@ else
 ```
 
 关于`send-send-send-recv`、`send-send-send-send-recv`、...等等，其实是看你第2个send到首个recv之间发了多少数据，如果待发送数据量没有达到MSS，那还是得等。说那么多，究竟该不该关掉`Nagle’s Algorithm`呢？看着办吧，nginx默认是开启的，而shadowsocks是关闭的。
-
-
-
-
-
-
-
-
-
-
-
-
