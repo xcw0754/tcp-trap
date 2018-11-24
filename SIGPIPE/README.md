@@ -71,7 +71,7 @@ int main()
             printf("recv data:%s\n", buf);
         }
 
-        // 只要收到第一个包就立即close
+        // 只要收到第一个包就立即close(即发送FIN)
         close(fd);
         printf("closed fd\n");
     }
@@ -136,7 +136,7 @@ int main()
     }
 
     // 第2个包是可以发送成功的，只是远端已经close了，所以相当于数据丢失了。
-    // 此时会收到对方的RST，下面的send就会收到SIGPIPE了
+    // 此时已收到对方的RST，下面的send就会收到信号SIGPIPE。
     sleep(2);
     if (send(sock, buf, sizeof(buf), 0) != sizeof(buf)) {
         printf("third send failed\n");
@@ -166,6 +166,8 @@ int main()
 第8个包，client再次发送512B数据
 
 第9个包，serv回复RST终止了连接
+
+>
 
 注：发第9个包是因为serv已经`close`句柄，无法再接收数据了，告知client别再发送数据了。client在收到第9个包之后，如果还调用send的话，就会产生SIGPIPE信号，因为这条连接已经不存在了。
 
@@ -238,6 +240,12 @@ int main()
 好了，现在考虑另一个问题，把client.c的第3个`send`换成`recv`会收到`SIGPIPE`信号吗？
 
 答案是否定的，`recv`会立即返回0，且errno为0，即成功。无论再`recv`几次，立即返回的结果还是一样的。所以，当tcp连接中调用`recv`返回值为0表示远端关闭了socket。
+
+这是`recv`手册提到的:
+
+> For TCP sockets, the return value 0 means the peer has closed its half side of the connection.
+
+比较奇怪的，为何不产生ECONNRESET？这个错误码似乎在Linux C/C++中无法产生。
 
 
 **值得注意一下，这里探讨的都是阻塞的socket，对于非阻塞的情况很多都不同，小心甄别。**
